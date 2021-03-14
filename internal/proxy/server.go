@@ -1,4 +1,4 @@
-package main
+package proxy
 
 import (
 	"fmt"
@@ -10,7 +10,6 @@ import (
 
 type proxyServer struct {}
 
-// ----------------------------------------------
 var hopHeaders = []string{
 	"Connection",
 	"Keep-Alive",
@@ -37,7 +36,6 @@ func deleteHeaders(header http.Header) {
 	}
 }
 
-// ----------------------------------------------
 
 func (ps *proxyServer) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 	log.Println("=====> ", req.RemoteAddr, " ", req.Method, " ", req.URL)

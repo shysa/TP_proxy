@@ -1,0 +1,16 @@
+server: {
+  address: "0.0.0.0",
+  port: "5000",
+  host: "",
+  protocol: "http",
+}
+
+database: {
+  db_driver: "postgres",
+  username: "proxy_user",
+  password: "qwerty123456",
+  db_name: "proxy_db",
+  ssl_mode: "disable",
+  host: "localhost",
+  max_conn: 10,
+}
