@@ -5,9 +5,8 @@ import (
 	"github.com/shysa/TP_proxy/app/database"
 	"github.com/shysa/TP_proxy/app/server"
 	"github.com/shysa/TP_proxy/config"
-	"github.com/shysa/TP_proxy/internal/proxy"
 	"log"
-	"net/http"
+	_ "net/http"
 )
 
 func main() {
@@ -22,13 +21,11 @@ func main() {
 	fmt.Println("connected to DB")
 
 	srv := server.New(config.Cfg, dbConn)
-	fmt.Println("listening on ", srv.Addr)
+	fmt.Println("Proxy listening on ", srv.Addr)
 	srv.ListenAndServe()
 
-	//handler := &proxyServer{}
-	//
-	//if err := http.ListenAndServe("127.0.0.1:8080", handler); err != nil {
-	//	log.Fatal("Can't start proxy server: ", err)
-	//}
+	apiSrv := server.NewApi(config.Cfg, dbConn)
+	fmt.Println("Api listening on ", apiSrv.Addr)
+	go apiSrv.ListenAndServe()
 }
 

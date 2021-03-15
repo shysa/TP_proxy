@@ -1,14 +1,18 @@
 package proxy
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"strings"
 )
 
-type proxyServer struct {}
+type ProxyServer struct {
+	Db *Handler
+}
 
 var hopHeaders = []string{
 	"Connection",
@@ -37,32 +41,36 @@ func deleteHeaders(header http.Header) {
 }
 
 
-func (ps *proxyServer) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
-	log.Println("=====> ", req.RemoteAddr, " ", req.Method, " ", req.URL)
-
+func (ps *ProxyServer) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 	if req.URL.Scheme != "http" {
-		msg := "unsupported protocol scheme " + req.URL.Scheme
-		http.Error(wr, msg, http.StatusBadRequest)
-		log.Println(msg)
+		http.Error(wr, "Unsupported protocol scheme ", http.StatusBadRequest)
+		log.Println("Unsupported protocol scheme ", req.URL.Scheme)
 		return
 	}
 
-	client := &http.Client{}
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 
 	req.RequestURI = ""
 	deleteHeaders(req.Header)
 
-	//proxyReq, err := http.NewRequest(req.Method, req.RequestURI, req.Body)
-	//copyHeader(proxyReq.Header, req.Header)
+	log.Println("=====> ", req.Method, " ", req.URL, " ", req.Proto)
+	//log.Println("\n", formatRequest(req))
 
-	log.Println("\n", formatRequest(req))
+	_, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		wr.WriteHeader(400)
+		return
+	}
 
-	//_, err = httputil.DumpRequest(proxyReq, true)
-	//if err != nil {
-	//	wr.WriteHeader(400)
-	//	return
-	//}
-	// S A V E ----------------
+	var reqId int
+	if reqId, err = ps.Db.SaveRequest(req, formatRequest(req)); err != nil {
+		log.Println("Can't save request to DB: ", err)
+		return
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -71,15 +79,23 @@ func (ps *proxyServer) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	log.Println("<===== ", resp.StatusCode, " ", resp.Status)
-
 	deleteHeaders(resp.Header)
 	copyHeader(wr.Header(), resp.Header)
 	wr.WriteHeader(resp.StatusCode)
-	io.Copy(wr, resp.Body)
 
-	//rsp, _ := ioutil.ReadAll(resp.Body)
-	//fmt.Printf("%v\n", string(rsp))
+	var l bytes.Buffer
+	rsp := io.MultiWriter(wr, &l)
+	if _, err := io.Copy(rsp, resp.Body); err != nil {
+		log.Printf("Failed to read body response: %v", err)
+	}
+
+	log.Println("<===== ", resp.StatusCode, " ", resp.Status, " ", resp.Request.URL)
+	//fmt.Printf("%v\n", l.String())
+
+	if err = ps.Db.SaveResponse(l.String(), reqId); err != nil {
+		log.Println("Can't save response to DB: ", err)
+		return
+	}
 }
 
 func formatRequest(r *http.Request) string {
@@ -103,5 +119,3 @@ func formatRequest(r *http.Request) string {
 
 	return strings.Join(request, "\n")
 }
-
-//func formatResponse(wr http.ResponseWriter, req *http.Request) string {}

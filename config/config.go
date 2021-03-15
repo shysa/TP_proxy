@@ -8,12 +8,13 @@ import (
 
 var (
 	Cfg *Config
-	Db   *pgx.Conn
+	Db  *pgx.Conn
 )
 
 type Config struct {
 	DB     ConfDB     `mapstructure:"database"`
 	Server ConfServer `mapstructure:"server"`
+	Api    ConfServer `mapstructure:"api"`
 }
 
 type ConfDB struct {
