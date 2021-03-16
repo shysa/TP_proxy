@@ -82,7 +82,7 @@ func (h *Handler) RepeatRequest(c *gin.Context) {
 	}
 
 	r := models.Request{}
-	if err := h.repo.QueryRow(context.Background(), "select id, request_text from request where id = $1", id).Scan(&r.Id, &r.RequestText); err != nil {
+	if err := h.repo.QueryRow(context.Background(), "select id, url, request_text from request where id = $1", id).Scan(&r.Id, &r.Url, &r.RequestText); err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -144,7 +144,7 @@ func doCheck(c *gin.Context, req *http.Request) bool {
 	c.Writer.WriteHeader(resp.StatusCode)
 
 	var l bytes.Buffer
-	rsp := io.MultiWriter(c.Writer, &l)
+	rsp := io.Writer(&l)
 	if _, err := io.Copy(rsp, resp.Body); err != nil {
 		log.Printf("Failed to read body response: %v", err)
 	}

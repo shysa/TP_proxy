@@ -2,12 +2,11 @@ package proxy
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
-	"strings"
+	"time"
 )
 
 type ProxyServer struct {
@@ -51,6 +50,7 @@ func (ps *ProxyServer) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
+		Timeout: 5 * time.Second,
 	}
 
 	req.RequestURI = ""
@@ -95,26 +95,4 @@ func (ps *ProxyServer) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 		log.Println("Can't save response to DB: ", err)
 		return
 	}
-}
-
-func formatRequest(r *http.Request) string {
-	var request []string
-
-	url := fmt.Sprintf("%v %v %v", r.Method, r.URL, r.Proto)
-	request = append(request, url)
-
-	request = append(request, fmt.Sprintf("Host: %v", r.Host))
-
-	for name, headers := range r.Header {
-		for _, h := range headers {
-			request = append(request, fmt.Sprintf("%v: %v", name, h))
-		}
-	}
-
-	if r.Method == "POST" {
-		r.ParseForm()
-		request = append(request, "\n %v", r.Form.Encode())
-	}
-
-	return strings.Join(request, "\n")
 }
