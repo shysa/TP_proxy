@@ -40,7 +40,6 @@ func deleteHeaders(header http.Header) {
 	}
 }
 
-
 func (ps *ProxyServer) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 	if req.URL.Scheme != "http" {
 		http.Error(wr, "Unsupported protocol scheme ", http.StatusBadRequest)
@@ -60,14 +59,14 @@ func (ps *ProxyServer) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 	log.Println("=====> ", req.Method, " ", req.URL, " ", req.Proto)
 	//log.Println("\n", formatRequest(req))
 
-	_, err := httputil.DumpRequest(req, true)
+	sr, err := httputil.DumpRequest(req, true)
 	if err != nil {
 		wr.WriteHeader(400)
 		return
 	}
 
 	var reqId int
-	if reqId, err = ps.Db.SaveRequest(req, formatRequest(req)); err != nil {
+	if reqId, err = ps.Db.SaveRequest(req, string(sr)); err != nil {
 		log.Println("Can't save request to DB: ", err)
 		return
 	}

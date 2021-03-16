@@ -21,11 +21,12 @@ func main() {
 	fmt.Println("connected to DB")
 
 	srv := server.New(config.Cfg, dbConn)
-	fmt.Println("Proxy listening on ", srv.Addr)
-	srv.ListenAndServe()
+	apiSrv := server.NewApi(config.Cfg, dbConn, srv)
 
-	apiSrv := server.NewApi(config.Cfg, dbConn)
 	fmt.Println("Api listening on ", apiSrv.Addr)
 	go apiSrv.ListenAndServe()
+
+	fmt.Println("Proxy listening on ", srv.Addr)
+	srv.ListenAndServe()
 }
 
