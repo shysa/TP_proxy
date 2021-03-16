@@ -11,7 +11,7 @@ RUN go build -o main .
 #
 # postgresql
 #
-FROM ubuntu:20.04
+FROM ubuntu:18.04
 
 ENV PGVER 10
 RUN apt-get update -y && apt-get install -y postgresql postgresql-contrib
@@ -21,12 +21,10 @@ USER postgres
 ADD ./sql/tables.sql /d/tables.sql
 ADD ./sql/init.sql /d/init.sql
 
-# Create a PostgreSQL role named ``dbms_db`` with ``qwerty123456`` as the password and
-# then create a database `dbms_db`
 RUN /etc/init.d/postgresql start &&\
     psql --command "CREATE USER proxy_user WITH SUPERUSER PASSWORD 'qwerty123456';" &&\
     psql -f /d/init.sql &&\
-    psql -f /d/tables.sql -d dbms_db &&\
+    psql -f /d/tables.sql -d proxy_db &&\
     /etc/init.d/postgresql stop
 
 
